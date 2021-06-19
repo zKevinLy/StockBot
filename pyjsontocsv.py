@@ -1,26 +1,28 @@
 import json
 import csv
+import pyapi 
+import pandas as pd
 
-def jsonToCSV(directory, fnameJSON, fnameCSV = None):
-    if not fnameCSV:
-        fnameCSV = fnameJSON
-    with open("{}/{}.json".format(directory,fnameJSON), 'r') as curJSON:
+def jsonToCSV(directory, fnameJSON):
+    with open("{}/{}.json".format(directory,fnameJSON), 'r+') as curJSON:
         data = json.load(curJSON)
-        with open("{}/{}.csv".format(directory,fnameCSV), 'w') as curCSV:
-            writer = csv.writer(curCSV)
+        with open("{}/{}.csv".format(directory,fnameJSON), 'w') as curCSV:
             alldata = []
-
             for k,v in data.items():
-                data2 = dict()
-                for a,b in v.items():
-                    data2[a] = b
-                data2['date']= k
-                alldata.append(data2)
+                v['date'] = k
+                alldata.append(v)
 
-            for count, info in enumerate(alldata):
-                if count == 0:
-                    writer.writerow(info.keys())
-                writer.writerow(info.values())
-                
+            columns = v.keys()
+            writer = csv.DictWriter(curCSV, fieldnames=columns)
+            writer.writeheader()
+
+            for data in alldata:
+                writer.writerow(data)
+
+def getCSV(ticker):
+    api = pyapi.API().storeHistoricalInfo(ticker)
+    jsonToCSV("Tickers",ticker)
+    return pd.read_csv('Tickers/{}.csv'.format(ticker))
+
 if __name__ == '__main__':
-    jsonToCSV("Tickers","SKLZ","SKLZ")
+    jsonToCSV("Tickers","SKLZ")

@@ -10,7 +10,7 @@ API_KEY2= os.getenv('API_KEY2')
 API_KEY3= os.getenv('API_KEY3')
 API_KEY4= os.getenv('API_KEY4')
 API_KEY5= os.getenv('API_KEY5')
- 
+
 class Exchanges:
   def __init__(self):
     self.supportedTickers = dict()
@@ -82,9 +82,9 @@ class Exchanges:
       
 if __name__ == '__main__':
   e = Exchanges()
-  y = e.getSupportedTickers()
-  x = e.getSupportedNames()
-  a = e.updateTickers()
-  b = e.lastUpdated()
-  for i in [y,x,a,b]:
-    print(i)
+  y = e.updateTickers()
+  # x = e.getSupportedNames()
+  # a = e.updateTickers()
+  # b = e.lastUpdated()
+  # for i in [y,x,a,b]:
+  #   print(i)

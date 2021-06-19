@@ -25,8 +25,10 @@ class API:
     # checks if file <fname> exists in a given directory <dname>
     def fileExists(self,dname,fname):
         try:
+            if dname not in os.listdir(Path(__file__).absolute().parent):
+                os.mkdir(dname)
             directory = Path(__file__).absolute().parent / '{}'.format(dname)
-            if directory/'{}'.format(fname) not in os.listdir(directory):
+            if f'{fname}' not in os.listdir(directory):
                 return False
             return True
         except:
@@ -35,6 +37,13 @@ class API:
     # stores historical information of ticker
     def storeHistoricalInfo(self,ticker):
         try:
+            if self.fileExists('Tickers', f'{ticker}.json'):
+                with open(f'Tickers/{ticker}.json') as cur:
+                    recent = list(json.load(cur).keys())[-1]
+                    date = recent.split()[0]
+                    today = self.today.split()[0]
+                    if date == today:
+                        return
             historical = dict()
             for key in self.keys:
                 url = "https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?apikey={key}".format(ticker = ticker, key = key)
@@ -68,6 +77,8 @@ class API:
                 for count,d in enumerate(data2):
                     if count == 0:
                         prev = d
+                    if d['date'].split()[1] != '00:00:00':
+                        continue
                     historical[d['date']] = {
                                             "open": d['open'],
                                             "high": d['high'],
@@ -80,30 +91,8 @@ class API:
                                             "vwap": (float(d['close'])*float(d['volume']))/float(d['volume'])}
                     prev = d
 
-                with open("Tickers/" + ticker + '.json', 'w') as cur:
+                with open(f"Tickers/{ticker}.json", 'w') as cur:
                     print(json.dumps(historical, indent=4, sort_keys=True), file = cur)
-
-                empty = False
-                if not self.fileExists("Tickers","lastUpdated.json"):
-                    with open("Tickers/lastUpdated.json",'w') as cur:
-                        pass
-
-                with open("Tickers/lastUpdated.json",'rb') as cur:
-                    if len(cur.read()) == 0:
-                        empty = True
-
-                if empty:
-                    with open("Tickers/lastUpdated.json",'r+') as cur:
-                        ticks = dict()
-                        ticks[ticker] = self.Time.getCurrentDate()
-                        json.dump(ticks, cur)
-                else:
-                    with open("Tickers/lastUpdated.json",'r') as cur:
-                        ticks = json.load(cur)
-                        ticks[ticker] = self.Time.getCurrentDate()
-                    os.remove("Tickers/lastUpdated.json")
-                    with open("Tickers/lastUpdated.json",'w') as cur:
-                        json.dump(ticks, cur)
                 break
         except:
             print("Error in {}".format("storeHistoricalInfo"))
@@ -306,7 +295,8 @@ class API:
 
 if __name__ == '__main__':
     api = API()
-    print(api.pricePredict("SKLZ"))
+    # print(api.fileExists("Tickers",'SKLZ.json'))
+    # api.storeHistoricalInfo("SKLZ")
     # testing = {
     #         "Historical":api.getHistorical('TSLA', 'close' , '2021-03-31 00:00:00'),
     #         "Realtime":api.getRealtime('TSLA'),

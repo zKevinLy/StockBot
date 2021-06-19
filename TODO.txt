@@ -1,1 +1,10 @@
 add custom price predictions
+
+weights
+market sentiment
+moving averages weighted
+premarket movement (one day)
+volume inc/dec
+
+top picks:
+reddit hits, top prediction ^

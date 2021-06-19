@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
 import numpy as np
+import pystockslstm
 import pyexchanges
 import pytime
 import pyapi
 import re
 import os
+
 
 import random
 import discord
@@ -83,6 +85,10 @@ class Stonks:
             if w in ['screener', 'screen']:
                 self.requestInfo['screener'] = True
             
+            # Predict
+            if w in ['predict']:
+                self.requestInfo['predict'] = True
+
         if self.requestInfo['screener']:
             for c,w in enumerate(words):
                 if c < len(words)-1:
@@ -158,6 +164,11 @@ class Stonks:
         if self.requestInfo['screener']:
             curInfo = self.API.getScreener(self.requestInfo['screenerVar'])
             results.append(curInfo)
+        # Predict
+        if self.requestInfo['predict']:
+            for tick in self.requestInfo['tickList']:
+                curInfo = pystockslstm.predictNext(tick)
+                results.append(curInfo)
         return results
 
     def reset(self):
@@ -174,6 +185,7 @@ class Stonks:
         self.requestInfo['news'] = None
         self.requestInfo['rating'] = None
         self.requestInfo['screener'] = None
+        self.requestInfo['predict'] = None
         self.requestInfo['screenerVar'] = dict()
         self.requestInfo['tickList'] = []
     
@@ -281,7 +293,11 @@ def discordInit(stonks, token):
         # Screener
         elif requestInfo['screener']:
             ret = screenerTemplate(replies)
-            
+            requestType = "Screener"
+        # Predict
+        elif requestInfo['predict']:
+            ret = predictTemplate(replies)
+            requestType = "Predict"
 
         if any([True for i in requestInfo.values() if isinstance(i, (int, float)) and i == True]):
             if type(ret) == str:
@@ -320,8 +336,10 @@ def discordInit(stonks, token):
                 parameters= ['marketCapMoreThan','marketCapLessThan','betaMoreThan','betaLessThan','volumeMoreThan','volumeLessThan','dividendMoreThan','dividendLessThan','sector','price','limit']
                 rep['Screener'] = '-screener <parameters>\ne.g. -screener price 100, volumeMoreThan 50000'
                 rep['Parameters'] = '\n'.join(parameters)
+            elif req[1] == 'predict':
+                rep['Predict'] = '-predict <ticker>\ne.g. -predict sklz\nnote: may take a while since its averaging 5 simulations of LSTM'
         else:
-            rep['Supported Commands'] = '-help <command>\nprice\nprofile\ngainer\nactive\nloser\nsector\nmarket-hours\nnews\nrating\nscreener'
+            rep['Supported Commands'] = '-help <command>\nprice\nprofile\ngainer\nactive\nloser\nsector\nmarket-hours\nnews\nrating\nscreener\npredict'
         return rep
 
     def mostTemplate(replies, requestInfo):
@@ -358,6 +376,7 @@ def discordInit(stonks, token):
                     rep.append("{}\nPrice:\t{}\nDate:\t{}\n".format(reply[0],reply[1], reply[2]))
             if len(rep) == 0:
                 return 'No results found'
+            print(rep)
             return rep
         except: 
             return 'Unsupported command'
@@ -432,13 +451,28 @@ def discordInit(stonks, token):
             return 'Unsupported command'
 
     def screenerTemplate(replies):
-        rep = ['```Parameters\n{: <12} {: <12} {: <12} {: <12}\n```'.format("Symbol","MarketCap","Price","Volume")]
-        for reply in replies:
-            for c,ticker in enumerate(reply[:15]):
-                rep.append('```{}: {: <12} {: <12} {: <12} {: <12}\n```'.format(c+1,ticker['symbol'],num2Word(ticker['marketCap']),ticker['price'],num2Word(ticker['volume'])))
-        if len(rep) == 1:
-            return 'No results found'
-        return rep
+        try:
+            rep = ['```Parameters\n{: <12} {: <12} {: <12} {: <12}\n```'.format("Symbol","MarketCap","Price","Volume")]
+            for reply in replies:
+                for c,ticker in enumerate(reply[:15]):
+                    rep.append('```{}: {: <12} {: <12} {: <12} {: <12}\n```'.format(c+1,ticker['symbol'],num2Word(ticker['marketCap']),ticker['price'],num2Word(ticker['volume'])))
+            if len(rep) == 1:
+                return 'No results found'
+            return rep
+        except:
+            return 'Unsupported command'
+
+
+    def predictTemplate(replies):
+        try:
+            rep = []
+            for reply in replies:
+                rep.append("Price next trading day: $"+str(reply[0][0]))
+            if len(rep) == 0:
+                return 'No results found'
+            return rep
+        except:
+            return 'Unsupported command'
 
     def mrkthrsTemplate(replies):
         try:
