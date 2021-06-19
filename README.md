@@ -9,4 +9,4 @@ https://financialmodelingprep.com
 Discord Token can be obtained from:
 https://discord.com/developers
 
-run 'python main.py' in console to run
+run 'python pystonks.py' in console to run
